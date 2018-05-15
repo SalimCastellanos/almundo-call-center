@@ -34,25 +34,33 @@ public class DispatcherManagerImpl implements DispatcherManager {
 	// Tiempo máximo llamada en segundos
 	private final static int MAX_TIME_CALL = 10;
 
+	// Variable que al activarse pone en espera la llamada hasta que encuentre un
+	// operador disponible
+	// en caso contrario respondera la llamada con el estatus
+	// OPERADORES_NO_DISPONIBLES
+	private static boolean ESPERAR_OPERADOR_DISPONIBLE = true;
+
+	// Tiempo muerto para volver a preguntar si hay un operador disponible en
+	// segundos
+	private final static int TIME_ANSWER_OPERATOR_AVAILABLE = 3;
+
 	@Autowired
 	OperatorDao operatorDao;
 
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see co.com.almundo.callcenter.manager.DispatcherManager#dispatchCall()
 	 */
 	@Override
 	public ResponseModel dispatchCall() throws InterruptedException, ExecutionException {
-
-		List<Operator> availableOperators = operatorDao.getOperators().stream()
-				.filter(operator -> operator.isAvailable()).sorted(Comparator.comparing(Operator::getCharge))
-				.collect(Collectors.toList());
 
 		Future<ResponseModel> answer;
 
 		Callable<ResponseModel> callable = new Callable<ResponseModel>() {
 			@Override
 			public ResponseModel call() {
+				List<Operator> availableOperators = getOperatorsAvailable();
 				ResponseModel response = new ResponseModel();
 				Operator freeOperator = null;
 
@@ -61,21 +69,32 @@ public class DispatcherManagerImpl implements DispatcherManager {
 
 				if (!availableOperators.isEmpty()) {
 					freeOperator = availableOperators.get(0);
-					
+
 					// Al atender la llamada se hace no disponible el operador
 					freeOperator.setAvailable(false);
-				}
+				} 
+				// En caso de estar ESPERAR_OPERADOR_DISPONIBLE activado (true), se espera a que exista
+				// un operador disponible
+				else if (ESPERAR_OPERADOR_DISPONIBLE) {
+					while (availableOperators.isEmpty()) {
+						waitOperatorAvailable();
+						availableOperators = getOperatorsAvailable();
+					}
+
+				} 
+				// En caso de estar ESPERAR_OPERADOR_DISPONIBLE desactivado (true), 
+				// se finaliza la llamada con el estatus OPERADORES_NO_DISPONIBLES
 				else {
 					response.setStatus(StatusCall.OPERADORES_NO_DISPONIBLES);
 					return response;
 				}
-				
+
 				processCall(delay);
-				
+
 				response.setOperator(freeOperator);
 				response.setCallDurationInSeconds(delay);
 				response.setStatus(StatusCall.FINALIZA_OK);
-				
+
 				// Se hace de nuevo disponible el operador para atender otra llamada
 				freeOperator.setAvailable(true);
 
@@ -94,12 +113,33 @@ public class DispatcherManagerImpl implements DispatcherManager {
 		return answerCall;
 	}
 
+	/**
+	 * Función encargada de devolver los operadores disponibles en el el siguiente orden de cargos (Charges)
+	 * OPERADOR, SUPERVISOR, DIRECTOR;
+	 * 
+	 * @return
+	 */
+	private List<Operator> getOperatorsAvailable() {
+		return operatorDao.getOperators().stream()
+				.filter(operator -> operator.isAvailable())
+				.sorted(Comparator.comparing(Operator::getCharge))
+				.collect(Collectors.toList());
+	}
+
 	private int getDelayCall() {
 		int diff = MAX_TIME_CALL - MIN_TIME_CALL;
 		int i = random.nextInt(diff + 1);
 		i += MIN_TIME_CALL;
 
 		return i;
+	}
+
+	private void waitOperatorAvailable() {
+		try {
+			Thread.sleep(TIME_ANSWER_OPERATOR_AVAILABLE * 1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void processCall(int delay) {
@@ -109,5 +149,15 @@ public class DispatcherManagerImpl implements DispatcherManager {
 			e.printStackTrace();
 		}
 	}
+
+	public static boolean isEsperarOperadorDisponible() {
+		return ESPERAR_OPERADOR_DISPONIBLE;
+	}
+
+	public static void setEsperarOperadorDisponible(boolean esperarOperadorDisponible) {
+		ESPERAR_OPERADOR_DISPONIBLE = esperarOperadorDisponible;
+	}
+	
+	
 
 }
