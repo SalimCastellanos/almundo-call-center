@@ -1,6 +1,9 @@
 # prueba técnica almundo.com - Call Center
 
 La prueba fue terminada por completo, parte inicial y puntos extras.
+La solución despliega un servidor Grizzly y expone servicios web utilizando el estandart JAX-RS,
+la implementación del estandart es la de referencia Jersey. Para injección de dependencia se utiliza Spring
+y se utiliza maven para la gestión de dependencias.
 
 ### Dar alguna solución sobre qué pasa con una llamada cuando no hay
 ### ningún empleado libre.
