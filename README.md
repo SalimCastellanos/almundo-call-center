@@ -15,7 +15,7 @@ Dar alguna solución sobre qué pasa con una llamada cuando entran
 más de 10 llamadas concurrentes.
 
 	El sistema utiliza un ThreadPool que garantiza que el sistema solo acepte 10 llamadas concurrentes, 
-	esto se puede configurar con el parámetro NUMERO_MAXIMO_LLAMADAS_CONCURRENTES, superado ese limite las llamadas quedan en espera.
-	En combinación con el parámetro	ESPERAR_OPERADOR_DISPONIBLE esto podría dar lugar a varios escenarios diferentes, 
-	lo cual depende de número de operadores registrados en el sistema.
+	esto se puede configurar con el parámetro NUMERO_MAXIMO_LLAMADAS_CONCURRENTES, superado ese limite las llamadas
+	quedan en espera. En combinación con el parámetro ESPERAR_OPERADOR_DISPONIBLE esto podría dar lugar a varios
+	escenarios diferentes, lo cual depende del número de operadores registrados en el sistema.
 	
